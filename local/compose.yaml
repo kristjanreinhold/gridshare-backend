@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgres:16
+    container_name: gridshare-db
+    environment:
+      POSTGRES_DB: gridshare
+      POSTGRES_USER: gridshare
+      POSTGRES_PASSWORD: gridshare
+    ports:
+      - "1111:5432"
+    volumes:
+      - gridshare-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gridshare -d gridshare"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  gridshare-pgdata:

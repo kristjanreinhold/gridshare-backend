@@ -12,7 +12,7 @@ seeded host (Mari Tamm); security is a later milestone.
 ## 1. Start Postgres (port 1111)
 
 ```bash
-cd ../local
+cd local
 docker compose up -d
 ```
 
@@ -25,7 +25,7 @@ cd backend
 JAVA_HOME=/path/to/jdk-21 ./gradlew bootRun
 ```
 
-Flyway applies the schema (`V1__init.sql`) and seed data (`V2__seed.sql`) on
+Flyway applies the schema (`V1__init.sql`) 
 startup. The API serves at `http://localhost:8080`.
 
 > The Vite dev proxy in `gridshare-web` forwards `/api/*` → `http://localhost:8080`.
