@@ -4,17 +4,14 @@ import ee.gridshare.domain.AppUser;
 import ee.gridshare.repo.AppUserRepository;
 import ee.gridshare.web.ApiException;
 import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
-/**
- * Resolves the "logged-in" host. Security comes later — for now this returns a
- * fixed seeded host (Mari Tamm). Swap this for the JWT subject once auth lands.
- */
+/** Resolves the authenticated host from the JWT principal (set by JwtAuthFilter). */
 @Component
 public class CurrentHost {
-
-    /** Seeded Mari Tamm (see V2__seed.sql). */
-    private static final UUID MOCK_HOST_ID = UUID.fromString("11111111-1111-1111-1111-111111111111");
 
     private final AppUserRepository users;
 
@@ -23,8 +20,15 @@ public class CurrentHost {
     }
 
     public AppUser get() {
-        return users.findById(MOCK_HOST_ID)
-                .orElseThrow(() -> new ApiException(
-                        org.springframework.http.HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "Hosti sessioon puudub"));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.getPrincipal() instanceof UUID hostId) {
+            return users.findById(hostId)
+                    .orElseThrow(() -> unauthorized("Hosti ei leitud"));
+        }
+        throw unauthorized("Hosti sessioon puudub");
+    }
+
+    private static ApiException unauthorized(String message) {
+        return new ApiException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", message);
     }
 }
