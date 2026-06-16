@@ -40,7 +40,12 @@ public class NotificationService {
         email.send(
                 host.getEmail(),
                 "Uus laadimispäring — GridShare",
-                "Sul on uus broneeringupäring %s (%s).\nHalda: %s/app/bookings".formatted(when, money, frontendUrl));
+                EmailTemplates.card(
+                        "Uus laadimispäring",
+                        "Sul on uus broneeringupäring <strong>%s</strong> hinnaga <strong>%s</strong>. Vaata see üle ja kinnita või lükka tagasi."
+                                .formatted(when, money),
+                        "Halda broneeringuid",
+                        frontendUrl + "/app/bookings"));
     }
 
     /** Step 11: host accepted → send the driver the payment link. */

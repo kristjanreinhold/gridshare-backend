@@ -38,7 +38,7 @@ public class EmailService {
             return;
         }
         try {
-            Mail mail = new Mail(new Email(fromEmail), subject, new Email(to), new Content("text/plain", body));
+            Mail mail = new Mail(new Email(fromEmail), subject, new Email(to), new Content("text/html", body));
             SendGrid sg = new SendGrid(apiKey);
             Request request = new Request();
             request.setMethod(Method.POST);
