@@ -17,6 +17,16 @@ repositories {
     mavenCentral()
 }
 
+// Twilio SDK drags in an old jjwt (0.11.x); force our version everywhere so
+// jjwt-api / jjwt-impl / jjwt-jackson stay aligned (avoids NoSuchMethodError).
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'io.jsonwebtoken') {
+            details.useVersion '0.12.6'
+        }
+    }
+}
+
 dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
@@ -29,6 +39,10 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+    implementation 'com.twilio.sdk:twilio:10.6.0'
+    implementation 'com.sendgrid:sendgrid-java:4.10.3'
+    // Connect Cloud Run → Cloud SQL (Postgres) over the managed socket.
+    implementation 'com.google.cloud.sql:postgres-socket-factory:1.20.1'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -23,10 +23,15 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final OAuth2SuccessHandler oauth2SuccessHandler;
+    private final List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter, OAuth2SuccessHandler oauth2SuccessHandler) {
+    public SecurityConfig(
+            JwtAuthFilter jwtAuthFilter,
+            OAuth2SuccessHandler oauth2SuccessHandler,
+            @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.oauth2SuccessHandler = oauth2SuccessHandler;
+        this.allowedOrigins = allowedOrigins;
     }
 
     @Bean
@@ -64,7 +69,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
+        config.setAllowedOrigins(allowedOrigins);
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

@@ -7,6 +7,7 @@ import ee.gridshare.domain.Payment;
 import ee.gridshare.domain.PaymentStatus;
 import ee.gridshare.domain.Payout;
 import ee.gridshare.domain.PayoutStatus;
+import ee.gridshare.notify.NotificationService;
 import ee.gridshare.repo.BookingRepository;
 import ee.gridshare.repo.ListingRepository;
 import ee.gridshare.repo.PaymentRepository;
@@ -16,6 +17,7 @@ import ee.gridshare.web.dto.Dtos.CreateBookingRequest;
 import ee.gridshare.web.dto.Dtos.PaymentLinkResponse;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -33,18 +35,21 @@ public class BookingService {
     private final PaymentRepository payments;
     private final PayoutRepository payouts;
     private final CurrentHost currentHost;
+    private final NotificationService notifications;
 
     public BookingService(
             BookingRepository bookings,
             ListingRepository listings,
             PaymentRepository payments,
             PayoutRepository payouts,
-            CurrentHost currentHost) {
+            CurrentHost currentHost,
+            NotificationService notifications) {
         this.bookings = bookings;
         this.listings = listings;
         this.payments = payments;
         this.payouts = payouts;
         this.currentHost = currentHost;
+        this.notifications = notifications;
     }
 
     // ── Driver ───────────────────────────────────────────────
@@ -59,6 +64,24 @@ public class BookingService {
         if (req.phone() == null || req.phone().isBlank()) {
             throw ApiException.badRequest("Telefoninumber on kohustuslik");
         }
+
+        // Reject overlapping time windows on the same listing (no double-booking).
+        Instant reqStart = req.start();
+        Instant reqEnd = reqStart.plus(Duration.ofMinutes(req.durationMin()));
+        boolean overlaps = bookings
+                .findByListingIdAndStatusIn(
+                        listing.getId(),
+                        List.of(BookingStatus.PENDING_HOST, BookingStatus.PENDING_PAYMENT, BookingStatus.CONFIRMED))
+                .stream()
+                .anyMatch(existing -> {
+                    Instant s = existing.getStartTime();
+                    Instant e = s.plus(Duration.ofMinutes(existing.getDurationMin()));
+                    return reqStart.isBefore(e) && s.isBefore(reqEnd); // half-open interval overlap
+                });
+        if (overlaps) {
+            throw ApiException.conflict("See ajavahemik on juba broneeritud");
+        }
+
         BigDecimal price = listing.getPricePerHour()
                 .multiply(BigDecimal.valueOf(req.durationMin()))
                 .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
@@ -70,8 +93,10 @@ public class BookingService {
         b.setDurationMin(req.durationMin());
         b.setPrice(price);
         b.setStatus(BookingStatus.PENDING_HOST);
-        return bookings.save(b);
-        // NB: real system now SMSes the host a signed accept/decline link.
+        Booking saved = bookings.save(b);
+        // Step 9: SMS + email the host about the new request.
+        notifications.hostNewBooking(saved);
+        return saved;
     }
 
     @Transactional(readOnly = true)
@@ -113,6 +138,8 @@ public class BookingService {
         }
         b.setStatus(BookingStatus.PENDING_PAYMENT);
         b.setHostRespondedAt(Instant.now());
+        // Step 11: SMS the driver the payment link.
+        notifications.driverAccepted(b);
         return b;
     }
 
@@ -124,6 +151,7 @@ public class BookingService {
         }
         b.setStatus(BookingStatus.DECLINED);
         b.setHostRespondedAt(Instant.now());
+        notifications.declined(b);
         return b;
     }
 
@@ -151,6 +179,8 @@ public class BookingService {
         payouts.save(payout);
         payment.setPayoutStatus(PayoutStatus.PENDING);
 
+        // Step 12: confirm to driver (with access instructions) + host.
+        notifications.confirmed(b);
         return b;
     }
 }
