@@ -21,6 +21,15 @@ public final class DtoMapper {
     }
 
     public static ListingDto listing(Listing l) {
+        return toDto(l, l.getInstructions());
+    }
+
+    /** Public variant — access instructions hidden (revealed only on a confirmed booking). */
+    public static ListingDto listingPublic(Listing l) {
+        return toDto(l, null);
+    }
+
+    private static ListingDto toDto(Listing l, String instructions) {
         return new ListingDto(
                 l.getId(),
                 l.getHost().getId(),
@@ -30,7 +39,7 @@ public final class DtoMapper {
                 l.getChargerType(),
                 l.getPowerKw(),
                 l.getPricePerHour(),
-                l.getInstructions(),
+                instructions,
                 l.isAvailable(),
                 l.isAutoAccept(),
                 l.isActive(),

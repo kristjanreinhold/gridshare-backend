@@ -43,12 +43,12 @@ public class ListingController {
                 // ignore malformed near param
             }
         }
-        return listings.listAvailable(lat, lng).stream().map(DtoMapper::listing).toList();
+        return listings.listAvailable(lat, lng).stream().map(DtoMapper::listingPublic).toList();
     }
 
     @GetMapping("/{id}")
     public ListingDto get(@PathVariable UUID id) {
-        return DtoMapper.listing(listings.get(id));
+        return DtoMapper.listingPublic(listings.get(id));
     }
 
     @PostMapping
