@@ -28,7 +28,9 @@ public class SecurityConfig {
     public SecurityConfig(
             JwtAuthFilter jwtAuthFilter,
             OAuth2SuccessHandler oauth2SuccessHandler,
-            @org.springframework.beans.factory.annotation.Value("${app.cors.allowed-origins}") List<String> allowedOrigins) {
+            @org.springframework.beans.factory.annotation.Value(
+                            "${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+                    List<String> allowedOrigins) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.oauth2SuccessHandler = oauth2SuccessHandler;
         this.allowedOrigins = allowedOrigins;
